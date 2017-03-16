@@ -29,21 +29,21 @@ IGRF_DATE = '01-Jan-2014';
 %Path to surface files
 %Specify path to the surface files, that would be used to define the 
 %geometry of tesseroid model. Path must have \ in the end.
-PATH_SURF = 'C:\Users\eldarba\Documents\MATLAB\INVERSION_CODE\data\';
+PATH_SURF = 'C:\data_folder\';
 
 %Top surface filename (in the folder PATH). Format: lon [deg] lat [deg]
 %depth [m]. Use a simple name without -, + symbols. This file should be in
 %PATH_SURF folder
-TOP_FILENAME = 'Antarctica_Top.xyz';
+TOP_FILENAME = 'Surface_Top.xyz';
 
 %Bottom surface filename (in the folder PATH). Format: lon [deg] lat [deg]
 %depth [m]. Use a simple name without -, + symbols. This file should be in
 %PATH_SURF folder
-BOT_FILENAME = 'Antarctica_Bot.xyz';
+BOT_FILENAME = 'Surface_Bot.xyz';
 
 %Path to the output
 %Specify folder where all intermediate files would be saved
-PATH_OUTPUT = 'C:\INVERSION_ANTARCTICA\';
+PATH_OUTPUT = 'C:\INVERSION_RESULTS\';
 
 %Tesseroid width (in [deg])
 %Set what width tesseroids in the model should have
@@ -73,9 +73,9 @@ SPACING = 2;
 
 %observed data
 %Bz in NED coordinate system. Use forward_calc_glob_grid_from_gh_shc
-OBSERVED_DATA_FILENAME_BX = strcat('C:\Users\eldarba\Documents\MATLAB\INVERSION_CODE\data\SIFM.shc_N70_ALTTESS400000m_Bx.xyz');
-OBSERVED_DATA_FILENAME_BY = strcat('C:\Users\eldarba\Documents\MATLAB\INVERSION_CODE\data\SIFM.shc_N70_ALTTESS400000m_By.xyz');
-OBSERVED_DATA_FILENAME_BZ = strcat('C:\Users\eldarba\Documents\MATLAB\INVERSION_CODE\data\SIFM.shc_N70_ALTTESS400000m_Bz.xyz'); %Bz in NED coordinate system. 
+OBSERVED_DATA_FILENAME_BX = strcat('C:\obsdata_folder\observed_Bx.xyz');
+OBSERVED_DATA_FILENAME_BY = strcat('C:\obsdata_folder\observed_By.xyz');
+OBSERVED_DATA_FILENAME_BZ = strcat('C:\obsdata_folder\observed_Bz.xyz'); %Bz in NED coordinate system. 
 
 %Vector comp. inverison result folder. Result folder would in PATH_OUTPUT
 %folder
