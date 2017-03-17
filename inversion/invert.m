@@ -4,6 +4,7 @@
 %This script uses IGRF calculator from https://www.mathworks.com/matlabcentral/fileexchange/34388-international-geomagnetic-reference-field--igrf--model
 
 %clear everything before start
+% Here is a new comment
 clc;
 clear all;
 close all;
