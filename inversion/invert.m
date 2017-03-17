@@ -3,7 +3,6 @@
 
 %This script uses IGRF calculator from https://www.mathworks.com/matlabcentral/fileexchange/34388-international-geomagnetic-reference-field--igrf--model
 
-
 %clear everything before start
 clc;
 clear all;
@@ -14,11 +13,17 @@ EARTH_RADIUS_IGRF_KM = 6371.2;
 EARTH_RADIUS_TESS_M = 6378137.0;
 
 %STEPS TO RUN
-STEP1 = 0; %1 - on; 0 - off  %creation of tesseroid model
-STEP2 = 0; %1 - on; 0 - off  %calculation of each tesseroid effect
-STEP3 = 0; %1 - on; 0 - off  %design matrix creation
-STEP4 = 0; %1 - on; 0 - off  %vector field comnponents inversion
-STEP5 = 0; %1 - on; 0 - off  %gradient components inversion
+STEP1 = 1; %1 - on; 0 - off  %creation of tesseroid model
+STEP2 = 1; %1 - on; 0 - off  %calculation of each tesseroid effect
+STEP3 = 1; %1 - on; 0 - off  %design matrix creation
+STEP4 = 1; %1 - on; 0 - off  %vector field comnponents inversion
+STEP5 = 1; %1 - on; 0 - off  %gradient components inversion
+
+%block filename template
+BLOCK_FILENAME_TEMPLATE = 'D%.1f_W%.1fE%.1fS%.1fN%.1f_%s_%s_layer_%d_%d.magtess_block';
+
+%Current date
+CURRENT_DATE = datestr(clock, 'ddmmyy_hhMMSS');
 
 %% PARAMETERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %IRGF11 date   
@@ -59,7 +64,7 @@ EAST_EDGE = 180;
 SOUTH_EDGE = -90;
 NORTH_EDGE = -55;
 
-%edge extension (in [deg])
+%edge extension (in [deg]). All should be positive
 EDGE_EXTENSION_W = 0;
 EDGE_EXTENSION_E = 0;
 EDGE_EXTENSION_S = 0;
@@ -73,9 +78,9 @@ SPACING = 2;
 
 %observed data
 %Bz in NED coordinate system. Use forward_calc_glob_grid_from_gh_shc
-OBSERVED_DATA_FILENAME_BX = strcat('C:\obsdata_folder\observed_Bx.xyz');
-OBSERVED_DATA_FILENAME_BY = strcat('C:\obsdata_folder\observed_By.xyz');
-OBSERVED_DATA_FILENAME_BZ = strcat('C:\obsdata_folder\observed_Bz.xyz'); %Bz in NED coordinate system. 
+OBSERVED_DATA_FILENAME_BX = strcat('C:\data_folder\observed_Bx.txt');
+OBSERVED_DATA_FILENAME_BY = strcat('C:\data_folder\observed_By.txt');
+OBSERVED_DATA_FILENAME_BZ = strcat('C:\data_folder\observed_Bz.txt'); %Bz in NED coordinate system. 
 
 %Vector comp. inverison result folder. Result folder would in PATH_OUTPUT
 %folder
@@ -139,8 +144,9 @@ end
 %% This step uses two surfaces and IGRF11 to create magnetized multilayered tesseroid model
 if STEP1
     close all;
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
     
+    fprintf('STEP 1\n');
     %% LOADING SURFACES
     
     figure(1);
@@ -175,7 +181,8 @@ if STEP1
             HOB = range_of_depth(i);
             HOT = range_of_depth(i) + LAYER_HEIGHT; 
 
-            TESS_FILE = fopen(strcat(PATH_OUTPUT, 'allblock_G', num2str(TESSEROID_WIDTH),'_W', num2str(B_W), 'E', num2str(B_E), 'S', num2str(B_S), 'N',num2str(B_N), '_', TOP_FILENAME, '_', BOT_FILENAME, '_layer_', num2str(HOB), '_', num2str(HOT), '.magtess_block'), 'w');
+            TESS_FILENAME = sprintf(BLOCK_FILENAME_TEMPLATE, TESSEROID_WIDTH, B_W, B_E, B_S, B_N, TOP_FILENAME, BOT_FILENAME, HOB, HOT);
+            TESS_FILE = fopen(strcat(PATH_OUTPUT, TESS_FILENAME), 'w');
 
             for blon = B_W : TESSEROID_WIDTH : B_E-TESSEROID_WIDTH/2.0
                 for blat = B_S : TESSEROID_WIDTH : B_N-TESSEROID_WIDTH/2.0
@@ -222,7 +229,8 @@ if STEP1
 
     end
 
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
+    fprintf('STEP 1 finished\n');
 end
 
 
@@ -233,8 +241,9 @@ end
 
 if STEP2
     close all;
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
     
+    fprintf('STEP 2\n');
     
     if( ~(exist(strcat(PATH_OUTPUT, 'tessbx.exe')) && exist(strcat(PATH_OUTPUT, 'tessby.exe')) && exist(strcat(PATH_OUTPUT, 'tessbz.exe')) && exist(strcat(PATH_OUTPUT, 'tessgrd.exe')) ))
     	fprintf('Missing tessbx.exe, tessby.exe, tessbz.exe or tessgrd.exe. Please copy these files to the output directory %s \n', PATH_OUTPUT);
@@ -256,19 +265,13 @@ if STEP2
 
 
     for i = 1 : N_FILES
+        WEST = WEST_EDGE;              
+        EAST = EAST_EDGE;              
+        SOUTH = SOUTH_EDGE;            
+        NORTH = NORTH_EDGE; 
+        
         current = FILENAMES(i).name;
-
-        borders = sscanf(current, strcat('allblock_G', num2str(TESSEROID_WIDTH), '_W%dE%dS%dN%d'));
-        WEST = borders(1)+EDGE_EXTENSION_W;              
-        EAST = borders(2)-EDGE_EXTENSION_E;              
-        SOUTH = borders(3)+EDGE_EXTENSION_S;            
-        NORTH = borders(4)-EDGE_EXTENSION_N;  
-
-        layer_depth = regExtractNums(current); %can be corrected
-        HOT = -layer_depth(7);
-        HOB = -layer_depth(6);
-
-        BLOCK = sprintf('W%dE%dS%dN%d_layer_%d_%d\\', WEST-EDGE_EXTENSION_W, EAST+EDGE_EXTENSION_E, SOUTH-EDGE_EXTENSION_S, NORTH+EDGE_EXTENSION_N, HOB, HOT);
+        BLOCK = sprintf('%s\\', current(1:end-14));
         mkdir(strcat(PATH_OUTPUT, BLOCK));
 
         N_LON = length(WEST : SPACING : EAST);             
@@ -331,13 +334,16 @@ if STEP2
 
     end
     
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
+    fprintf('STEP 2 finished\n');
 end
 
 %% %%%%%%%%%%%%%%%%%   STEP 3   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if STEP3
     close all;
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
+    fprintf('STEP 3\n');
+    
     %% This script calculates all design matrices
     
     
@@ -351,14 +357,12 @@ if STEP3
     end
 
     %% CREATE GRADIENT GRIDS
-    current = FILENAMES(1).name;
-
-    borders = sscanf(current, strcat('allblock_G', num2str(TESSEROID_WIDTH), '_W%dE%dS%dN%d'));
-    WEST = borders(1)+EDGE_EXTENSION_W;              
-    EAST = borders(2)-EDGE_EXTENSION_E;              
-    SOUTH = borders(3)+EDGE_EXTENSION_S;            
-    NORTH = borders(4)-EDGE_EXTENSION_N;
-
+    
+    WEST = WEST_EDGE;              
+    EAST = EAST_EDGE;              
+    SOUTH = SOUTH_EDGE;            
+    NORTH = NORTH_EDGE; 
+        
     N_LON = length(WEST : SPACING : EAST);             
     N_LAT = length(SOUTH : SPACING : NORTH);  
 
@@ -377,26 +381,18 @@ if STEP3
 
 
         current = FILENAMES(hhh).name;
-        sprintf('Current file: %s\n',current)
-
-        borders = sscanf(current, strcat('allblock_G', num2str(TESSEROID_WIDTH), '_W%dE%dS%dN%d'));
-        WEST = borders(1)+EDGE_EXTENSION_W;              
-        EAST = borders(2)-EDGE_EXTENSION_E;              
-        SOUTH = borders(3)+EDGE_EXTENSION_S;            
-        NORTH = borders(4)-EDGE_EXTENSION_N;
-
-        layer_depth = regExtractNums(current); %can be corrected
-        HOT = -layer_depth(7);
-        HOB = -layer_depth(6);
-
-        DATASET = sprintf('W%dE%dS%dN%d_layer_%d_%d', WEST-EDGE_EXTENSION_W, EAST+EDGE_EXTENSION_E, SOUTH-EDGE_EXTENSION_S, NORTH+EDGE_EXTENSION_N, HOB, HOT);
-
+        DATASET = sprintf('%s', current(1:end-14));
+        sprintf('Current folder: %s\n',DATASET);
 
         PATH_OUTPUT_BLOCK = strcat(PATH_OUTPUT, DATASET,'\');
 
 
         BODIES = dir(fullfile(strcat(PATH_OUTPUT_BLOCK, '*.magtess')));
         N_BODIES = length(BODIES);
+        if(N_BODIES == 0)
+            printf('No calculated effects of individual tesseroids\n')
+            return
+        end
 
         dummy = textread(strcat(PATH_OUTPUT_BLOCK, BODIES(1).name, '_Bz.txt'),'%f', 'commentstyle', 'shell');
         grid_num_pts = length(dummy)/4;
@@ -607,15 +603,25 @@ if STEP3
 
     end
     
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
+    fprintf('STEP 3 finished\n');
 end
 
 
 %% %%%%%%%%%%%%%%%%%   STEP 4   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if STEP4
     close all;
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    fprintf('STEP 4\n');
+    
+    
+    if(~(exist(OBSERVED_DATA_FILENAME_BX) && exist(OBSERVED_DATA_FILENAME_BY) && exist(OBSERVED_DATA_FILENAME_BZ)))
+        fprintf('Observed data files not found. Check filenames. \n');
+        return
+    end
+        
+    
 
     %crease inversion result folder
     if(~exist(strcat(PATH_OUTPUT, RESULT_FOLDER_VECT)))
@@ -637,28 +643,13 @@ if STEP4
     N_BODIES = [];
     A = [];
 
-    LAYER_HEIGHT = zeros(N_LAYERS, 1);
-    HOT = zeros(N_LAYERS, 1);
-    HOB = zeros(N_LAYERS, 1);
-
     iter_i = 0;
     for layer_i = 1 : N_LAYERS
         current = FILENAMES(layer_i).name;
-        fprintf('Block: %s\n', current);
+        DATASET = sprintf('%s', current(1:end-14));
+        sprintf('Current folder: %s\n',DATASET);
 
-        borders = sscanf(current, strcat('allblock_G', num2str(TESSEROID_WIDTH), '_W%dE%dS%dN%d'));
-        WEST = borders(1)+EDGE_EXTENSION_W;             
-        EAST = borders(2)-EDGE_EXTENSION_E;              
-        SOUTH = borders(3)+EDGE_EXTENSION_S;           
-        NORTH = borders(4)-EDGE_EXTENSION_N;
-
-        layer_depth = regExtractNums(current); %can be corrected
-        HOT(layer_i) = -layer_depth(7);
-        HOB(layer_i) = -layer_depth(6);
-        LAYER_HEIGHT(layer_i) = abs(HOT(layer_i) - HOB(layer_i));
-
-        DATASET = sprintf('W%dE%dS%dN%d_layer_%d_%d', WEST-EDGE_EXTENSION_W, EAST+EDGE_EXTENSION_E, SOUTH-EDGE_EXTENSION_S, NORTH+EDGE_EXTENSION_N, HOB(layer_i), HOT(layer_i));
-        LOCAL_OBSERVED_NAME = sprintf('W%dE%dS%dN%d', WEST-EDGE_EXTENSION_W, EAST+EDGE_EXTENSION_E, SOUTH-EDGE_EXTENSION_S, NORTH+EDGE_EXTENSION_N);
+        LOCAL_OBSERVED_NAME = CURRENT_DATE;
 
         PATH = strcat(PATH_OUTPUT, DATASET,'\');
 
@@ -727,16 +718,9 @@ if STEP4
 
     %% LOAD GRID
     current = FILENAMES(1).name;
+    DATASET = sprintf('%s', current(1:end-14));
+    sprintf('Current folder: %s\n',DATASET);
 
-    borders = sscanf(current, strcat('allblock_G', num2str(TESSEROID_WIDTH), '_W%dE%dS%dN%d'));
-    WEST = borders(1)+EDGE_EXTENSION_W;              
-    EAST = borders(2)-EDGE_EXTENSION_E;              
-    SOUTH = borders(3)+EDGE_EXTENSION_S;            
-    NORTH = borders(4)-EDGE_EXTENSION_N;
-
-    layer_depth = regExtractNums(current); %can be corrected
-
-    DATASET = sprintf('W%dE%dS%dN%d_layer_%d_%d', WEST-EDGE_EXTENSION_W, EAST+EDGE_EXTENSION_E, SOUTH-EDGE_EXTENSION_S, NORTH+EDGE_EXTENSION_N, HOB(1), HOT(1));
 
     PATH = strcat(PATH_OUTPUT, DATASET,'\');
     BODIES = dir(fullfile(strcat(PATH, '*.magtess')));
@@ -794,43 +778,7 @@ if STEP4
         COV_X = blkdiag(COV_X, RRR);
     end
 
-    %figure of covariance matrix
-    %{
-    fig_COV_X = figure(1);
-
-    pcolor(log10(COV_X));
-    shading flat
-    shading interp
-    fig_COV_X_cb = colorbar;
-    fig_COV_X_cb_YTicks = get(fig_COV_X_cb,'YTick');
-
-    set(fig_COV_X_cb,'YTickLabel',strread(num2str(10.^(fig_COV_X_cb_YTicks), '%g\n'),'%s'));
-    xlabel(fig_COV_X_cb, 'SI^2');
-    axis tight;
-    axis square;
-    ylabel('n_{tesseroid}');
-    xlabel('n_{tesseroid}');
-    zlabel('SI^2');
-
-
-    hold on
-
-    iter_i = 0;
-    for layer_i = 1 : N_LAYERS
-        rectangle('Position',[iter_i+1 iter_i+1 N_BODIES(layer_i)-1 N_BODIES(layer_i)-1], 'EdgeColor','w')
-        hold on
-        text(iter_i+1+N_BODIES(layer_i)+10,iter_i,strcat('Layer ', num2str(layer_i)), 'Color','white')
-        hold on
-
-        iter_i = iter_i + N_BODIES(layer_i); 
-    end
-
-    set(get(fig_COV_X,'CurrentAxes'),'Ydir','reverse')
-    print(fig_COV_X, strcat(PATH_OUTPUT, RESULT_FOLDER, LOCAL_OBSERVED_NAME, '_covariance_matrix_suscept.jpg'), '-r200', '-djpeg');
-    %saveas(fig_COV_X, strcat(PATH_DATA, RESULT_FOLDER, LOCAL_OBSERVED_NAME, '_covariance_matrix_suscept.png'))
-    %}    
     Q = inv(COV_X);
-
 
     %% COVARIANCE MATRIX DATA
 
@@ -839,50 +787,11 @@ if STEP4
         COV_d = blkdiag(COV_d, diag(ones(N_POINTS, 1))*(sigma_vect_d(di)^2));
     end
 
-    %figure of covariance matrix
-    %{
-    fig_COV_d = figure(2);
-
-    pcolor(log10(COV_d));
-    shading flat
-    shading interp
-    fig_COV_d_cb = colorbar;
-    fig_COV_d_cb_YTicks = get(fig_COV_d_cb,'YTick');
-
-    set(fig_COV_d_cb,'YTickLabel',strread(num2str(10.^(fig_COV_d_cb_YTicks), '%g\n'),'%s'));
-    xlabel(fig_COV_d_cb, 'nT^2');
-    axis tight;
-    axis square;
-    ylabel('n_{gridpoint}');
-    xlabel('n_{gridpoint}');
-    zlabel('nT^2');
-
-
-    hold on
-
-    iter_i = 0;
-    comp_ch = cellstr(['Bx'; 'By'; 'Bz']);
-    for comp_i = 1 : 3
-        rectangle('Position',[iter_i+1 iter_i+1 N_POINTS-1 N_POINTS-1], 'EdgeColor','w')
-        hold on
-        text(iter_i+1+N_POINTS+10,iter_i,strcat('Component ', char(comp_ch(comp_i))), 'Color','white')
-        hold on
-
-        iter_i = iter_i + N_POINTS; 
-    end
-
-    set(get(fig_COV_d,'CurrentAxes'),'Ydir','reverse')
-    print(fig_COV_d, strcat(PATH_OUTPUT, RESULT_FOLDER, LOCAL_OBSERVED_NAME, '_covariance_matrix_data.jpg'), '-r200', '-djpeg');
-    %saveas(fig_COV_d, strcat(PATH_DATA, RESULT_FOLDER, LOCAL_OBSERVED_NAME, '_covariance_matrix_data.png'))
-    %}
-
-
     P = inv(COV_d);
 
     %% LEAST SQUARES
 
     fprintf('\nInversion:\n');
-
 
     L = (A.' * P * A + Q);
     R = (A.' * P * d + Q * x_0);
@@ -929,48 +838,17 @@ if STEP4
     fclose(datafid);
 
 
-        %%make a picture
-    WEST = floor(min(lon_c))%+EDGE;              
-    EAST = ceil(max(lon_c))%-EDGE;              
-    SOUTH = floor(min(lat_c))%+EDGE;            
-    NORTH = ceil(max(lat_c))%-EDGE;  
-
+    %%make a picture
+    WEST = WEST_EDGE;              
+    EAST = EAST_EDGE;              
+    SOUTH = SOUTH_EDGE;            
+    NORTH = NORTH_EDGE; 
+    
     SUSMIN = min(max(x_0), min(chi));
     SUSMAX = max(max(x_0), max(chi));
     STEP = round(((SUSMAX - SUSMIN)/10)*100)/100;
 
-    fid_edgexy=fopen(strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, LOCAL_OBSERVED_NAME, '_edges.xy'), 'w');
-
-    latxy = SOUTH+EDGE_EXTENSION_S;
-    for lonxy = WEST+EDGE_EXTENSION_W : 1 : EAST-EDGE_EXTENSION_E
-        fprintf(fid_edgexy, '%f %f\n', lonxy, latxy);
-    end
-
-    for latxy = SOUTH+EDGE_EXTENSION_S : 1 : NORTH-EDGE_EXTENSION_N
-        fprintf(fid_edgexy, '%f %f\n', lonxy, latxy);
-    end
-
-    for lonxy = EAST-EDGE_EXTENSION_E : -1 : WEST+EDGE_EXTENSION_W
-        fprintf(fid_edgexy, '%f %f\n', lonxy, latxy);
-    end
-
-    for latxy = NORTH-EDGE_EXTENSION_N : -1 : SOUTH+EDGE_EXTENSION_S
-        fprintf(fid_edgexy, '%f %f\n', lonxy, latxy);
-    end
-
-    fclose(fid_edgexy);
-
-
     fid_bat=fopen(strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, 'exec.bat'), 'w');
-
-    fprintf(fid_bat, 'set topsurf=%s\n', strcat(PATH_SURF, TOP_FILENAME));
-    fprintf(fid_bat, 'set botsurf=%s\n', strcat(PATH_SURF, BOT_FILENAME));
-    fprintf(fid_bat, 'surface  %%topsurf%% -Rd%d/%d/%d/%d -I1d -G%%topsurf%%.grd\n', WEST, EAST, SOUTH, NORTH);
-    fprintf(fid_bat, 'surface  %%botsurf%% -Rd%d/%d/%d/%d -I1d -G%%botsurf%%.grd\n', WEST, EAST, SOUTH, NORTH);
-    fprintf(fid_bat, 'grdmath  %%topsurf%%.grd 1000 DIV  = %%topsurf%%.grd\n');
-    fprintf(fid_bat, 'grdmath  %%botsurf%%.grd 1000 DIV = %%botsurf%%.grd\n');
-
-
 
     for lay = 1 : N_LAYERS
         fprintf(fid_bat, 'set grid1=%s\n', strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, LOCAL_OBSERVED_NAME, '_layer', num2str(lay),'_suscept_rslt'));
@@ -978,9 +856,6 @@ if STEP4
         fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Cpanoply -E19 -T= -L%f/%f>  %%grid1%%.cpt\n', SUSMIN, SUSMAX);
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'grdcontour %%topsurf%%.grd -Rd%d/%d/%d/%d -JU33N/6i -L%d/%d -C%d -A%d -Wcthin,white, -Wathin,white, -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH, HOB(lay)/1000+0.2, HOT(lay)/1000-0.2, 2, 2);
-        fprintf(fid_bat, 'grdcontour %%botsurf%%.grd -Rd%d/%d/%d/%d -JU33N/6i -L%d/%d -C%d -A%d -Wcthin,black, -Wathin,black, -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH, HOB(lay)/1000+0.2, HOT(lay)/1000-0.2, 2, 2);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"Susceptibility":/:SI: -O >> %%grid1%%.ps\n', STEP);
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
 
@@ -990,9 +865,6 @@ if STEP4
         fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Cpanoply -E19 -T= -L%f/%f >  %%grid1%%.cpt\n', SUSMIN, SUSMAX);
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'grdcontour %%topsurf%%.grd -Rd%d/%d/%d/%d -JU33N/6i -L%d/%d -C%d -A%d -Wcthin,white, -Wathin,white, -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH, HOB(lay)/1000+0.2, HOT(lay)/1000-0.2, 2, 2);
-        fprintf(fid_bat, 'grdcontour %%botsurf%%.grd -Rd%d/%d/%d/%d -JU33N/6i -L%d/%d -C%d -A%d -Wcthin,black, -Wathin,black, -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH, HOB(lay)/1000+0.2, HOT(lay)/1000-0.2, 2, 2);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"Susceptibility":/:SI: -O >> %%grid1%%.ps\n', STEP);
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
     end
@@ -1009,7 +881,6 @@ if STEP4
         fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Chaxby -E30 -L%f/%f >  %%grid1%%.cpt\n', FIELDMIN, FIELDMAX);
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"forward after inv. %s":/:nT: -O >> %%grid1%%.ps\n', FIELDSTEP, char(COMP_let(cl)));
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
 
@@ -1018,7 +889,6 @@ if STEP4
         fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Chaxby -E30 -L%f/%f  >  %%grid1%%.cpt\n', FIELDMIN, FIELDMAX);
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"original observed %s":/:nT: -O >> %%grid1%%.ps\n', FIELDSTEP, char(COMP_let(cl)));
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
 
@@ -1027,7 +897,6 @@ if STEP4
         fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Chaxby -E30  >  %%grid1%%.cpt\n');
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"(or. obs- - surr.)-(forward after inv.)%s":/:nT: -O >> %%grid1%%.ps\n', round(min(sigma_vect_d)*100)/100, char(COMP_let(cl)));
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
 
@@ -1045,9 +914,7 @@ if STEP4
 
     %% SAVING RESULTS
 
-    curr_date = datestr(clock, 'ddmmyy_hhMMSS');
-
-    FILNAME_MASK = strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, curr_date);
+    FILNAME_MASK = strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, CURRENT_DATE);
 
     X0_FILENAME = strcat(FILNAME_MASK,'_x_0.bin');
     fileID = fopen(X0_FILENAME,'w');
@@ -1075,26 +942,11 @@ if STEP4
 
     fprintf('Calculating...\n')
 
-    result_fid = fopen(strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, 'RESULT_model.magtess'), 'w');
-
-    j = 1;
+    result_fid = fopen(strcat(PATH_OUTPUT, RESULT_FOLDER_VECT, LOCAL_OBSERVED_NAME, '_RESULT_model.magtess'), 'w');
 
     for i = 1 : N_FILES
         current = FILENAMES(i).name;
-
-        borders = sscanf(current, strcat('allblock_G', num2str(TESSEROID_WIDTH), '_W%dE%dS%dN%d'));
-        WEST = borders(1)+EDGE_EXTENSION_W;              
-        EAST = borders(2)-EDGE_EXTENSION_E;              
-        SOUTH = borders(3)+EDGE_EXTENSION_S;            
-        NORTH = borders(4)-EDGE_EXTENSION_N;  
-
-        layer_depth = regExtractNums(current); %can be corrected
-        HOT = -layer_depth(7);
-        HOB = -layer_depth(6);
-
-
         fid = fopen(strcat(PATH_OUTPUT, current), 'r');
-
 
         j = 1;
         tline = fgetl(fid);
@@ -1116,17 +968,24 @@ if STEP4
     fclose(result_fid);
     
     
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
+    fprintf('STEP 4 finished\n');
 end
 
 
 %% %%%%%%%%%%%%%%%%%   STEP 5   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if STEP5
     close all;
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+    fprintf('STEP 5\n');
+    
+    if(~(exist(OBSERVED_DATA_FILENAME_BX) && exist(OBSERVED_DATA_FILENAME_BY) && exist(OBSERVED_DATA_FILENAME_BZ)))
+        fprintf('Observed data files not found. Check filenames. \n');
+        return
+    end
+    
     %crease inversion result folder
     if(~exist(strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD)))
         mkdir(strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD));
@@ -1148,29 +1007,19 @@ if STEP5
     N_BODIES = [];
     A = [];
 
-    LAYER_HEIGHT = zeros(N_LAYERS, 1);
-    HOT = zeros(N_LAYERS, 1);
-    HOB = zeros(N_LAYERS, 1);
-
     iter_i = 0;
     for layer_i = 1 : N_LAYERS
         current = FILENAMES(layer_i).name;
-        fprintf('Block: %s\n', current);
+        DATASET = sprintf('%s', current(1:end-14));
+        sprintf('Current folder: %s\n',DATASET);
 
-        borders = sscanf(current, strcat('allblock_G', num2str(TESSEROID_WIDTH), '_W%dE%dS%dN%d'));
-        WEST = borders(1)+EDGE_EXTENSION_W;             
-        EAST = borders(2)-EDGE_EXTENSION_E;              
-        SOUTH = borders(3)+EDGE_EXTENSION_S;           
-        NORTH = borders(4)-EDGE_EXTENSION_N;
+        WEST = WEST_EDGE;              
+        EAST = EAST_EDGE;              
+        SOUTH = SOUTH_EDGE;            
+        NORTH = NORTH_EDGE; 
 
-        layer_depth = regExtractNums(current); %can be corrected
-        HOT(layer_i) = -layer_depth(7);
-        HOB(layer_i) = -layer_depth(6);
-        LAYER_HEIGHT(layer_i) = abs(HOT(layer_i) - HOB(layer_i));
-
-        DATASET = sprintf('W%dE%dS%dN%d_layer_%d_%d', WEST-EDGE_EXTENSION_W, EAST+EDGE_EXTENSION_E, SOUTH-EDGE_EXTENSION_S, NORTH+EDGE_EXTENSION_N, HOB(layer_i), HOT(layer_i));
-        LOCAL_OBSERVED_NAME = sprintf('W%dE%dS%dN%d', WEST-EDGE_EXTENSION_W, EAST+EDGE_EXTENSION_E, SOUTH-EDGE_EXTENSION_S, NORTH+EDGE_EXTENSION_N);
-
+        LOCAL_OBSERVED_NAME = CURRENT_DATE;
+         
         PATH = strcat(PATH_OUTPUT, DATASET,'\');
 
         BODIES = dir(fullfile(strcat(PATH, '*.magtess')));
@@ -1356,7 +1205,7 @@ if STEP5
     obs_Byy = obs_Byy(2:end-1, 2:end-1);
     obs_Bzy = obs_Bzy(2:end-1, 2:end-1);
 
-
+%{
             figure('Name', strcat('Gradients (calculated using central differences)'))
             sp_bxx = subplot(3, 3, 1);
             pcolor(obs_Bxx);
@@ -1436,7 +1285,7 @@ if STEP5
             xlabel('longitude [deg]');
             zlabel('[pT]/km');
             title(sp_bzy,'B_{zy}');
-
+%}
 
     C_LON = C_LON(2:end-1, 2:end-1);
     C_LAT = C_LAT(2:end-1, 2:end-1);
@@ -1464,17 +1313,7 @@ if STEP5
 
     %%%%%%%%%%%%%%%
     current = FILENAMES(1).name;
-
-    borders = sscanf(current, strcat('allblock_G', num2str(TESSEROID_WIDTH), '_W%dE%dS%dN%d'));
-    WEST = borders(1)+EDGE_EXTENSION_W;              
-    EAST = borders(2)-EDGE_EXTENSION_E;              
-    SOUTH = borders(3)+EDGE_EXTENSION_S;            
-    NORTH = borders(4)-EDGE_EXTENSION_N;
-
-    layer_depth = regExtractNums(current); %can be corrected
-
-
-    DATASET = sprintf('W%dE%dS%dN%d_layer_%d_%d', WEST-EDGE_EXTENSION_W, EAST+EDGE_EXTENSION_E, SOUTH-EDGE_EXTENSION_S, NORTH+EDGE_EXTENSION_N, HOB(1), HOT(1));
+    DATASET = sprintf('%s', current(1:end-14));
 
     PATH = strcat(PATH_OUTPUT, DATASET,'\');
     BODIES = dir(fullfile(strcat(PATH, '*.magtess')));
@@ -1551,51 +1390,10 @@ if STEP5
 
     COV_X = [];
     for di = 1 : N_LAYERS
-
         RRR = diag(ones(N_BODIES(di), 1))*(sigma_x(di)^2);
-        %if di < N_LAYERS
+
         COV_X = blkdiag(COV_X, RRR);
-        %else
-        %    dumA = ones(N_BODIES(di), N_BODIES(di));
-        %    [Am An] = size(dumA);
-        %    dumA(1:Am+1:end) = (sigma_x(di)^2);
-        %    diag_of_COV_X = blkdiag(diag_of_COV_X, dumA);
-        %end
     end
-
-    %{
-    fig_COV_X = figure(1);
-
-    pcolor(log10(COV_X));
-    shading flat
-    shading interp
-    fig_COV_X_cb = colorbar;
-    fig_COV_X_cb_YTicks = get(fig_COV_X_cb,'YTick');
-
-    set(fig_COV_X_cb,'YTickLabel',strread(num2str(10.^(fig_COV_X_cb_YTicks), '%g\n'),'%s'));
-    xlabel(fig_COV_X_cb, 'SI^2');
-    axis tight;
-    axis square;
-    ylabel('n_{tesseroid}');
-    xlabel('n_{tesseroid}');
-    zlabel('SI^2');
-
-    hold on
-
-    iter_i = 0;
-    for layer_i = 1 : N_LAYERS
-        rectangle('Position',[iter_i+1 iter_i+1 N_BODIES(layer_i)-1 N_BODIES(layer_i)-1], 'EdgeColor','w')
-        hold on
-        text(iter_i+1+N_BODIES(layer_i)+10,iter_i,strcat('Layer ', num2str(layer_i)), 'Color','white')
-        hold on
-
-        iter_i = iter_i + N_BODIES(layer_i); 
-    end
-
-    set(get(fig_COV_X,'CurrentAxes'),'Ydir','reverse')
-    print(fig_COV_X, strcat(PATH_DATA, RESULT_FOLDER, LOCAL_OBSERVED_NAME, '_covariance_matrix_suscept.jpg'), '-r200', '-djpeg');
-    %saveas(fig_COV_X, strcat(PATH_DATA, RESULT_FOLDER, LOCAL_OBSERVED_NAME, '_covariance_matrix_suscept.png'))
-      %}
 
     Q = inv(COV_X);
 
@@ -1605,49 +1403,11 @@ if STEP5
     for di = 1 : 6
         COV_d = blkdiag(COV_d, diag(ones(N_POINTS, 1))*(sigma_grad_d(di)^2));
     end
-    %{
-    fig_COV_d = figure(2);
-
-    pcolor(log10(COV_d));
-    shading flat
-    shading interp
-    fig_COV_d_cb = colorbar;
-    fig_COV_d_cb_YTicks = get(fig_COV_d_cb,'YTick');
-
-    set(fig_COV_d_cb,'YTickLabel',strread(num2str(10.^(fig_COV_d_cb_YTicks), '%g\n'),'%s'));
-    xlabel(fig_COV_d_cb, 'nT^2');
-    axis tight;
-    axis square;
-    ylabel('n_{gridpoint}');
-    xlabel('n_{gridpoint}');
-    zlabel('nT^2');
-
-    hold on
-
-    iter_i = 0;
-    comp_ch = cellstr(['Bxx'; 'Byx'; 'Bzx'; 'Bxy'; 'Byy'; 'Bzy']);
-    for comp_i = 1 : 6
-        rectangle('Position',[iter_i+1 iter_i+1 N_POINTS-1 N_POINTS-1], 'EdgeColor','w')
-        hold on
-        text(iter_i+1+N_POINTS+10,iter_i,strcat('Component ', char(comp_ch(comp_i))), 'Color','white')
-        hold on
-
-        iter_i = iter_i + N_POINTS; 
-    end
-
-    set(get(fig_COV_d,'CurrentAxes'),'Ydir','reverse')
-    print(fig_COV_d, strcat(PATH_DATA, RESULT_FOLDER, LOCAL_OBSERVED_NAME, '_covariance_matrix_data.jpg'), '-r200', '-djpeg');
-    %saveas(fig_COV_d, strcat(PATH_DATA, RESULT_FOLDER, LOCAL_OBSERVED_NAME, '_covariance_matrix_data.png'))
-    %}
-
 
     P = inv(COV_d);
 
 
     fprintf('\nInversion:\n');
-
-
-
 
 
     L = (A.' * P * A + Q);
@@ -1755,62 +1515,19 @@ if STEP5
     end
     fclose(datafid);
 
+    %%make a picture
+    WEST = WEST_EDGE;              
+    EAST = EAST_EDGE;              
+    SOUTH = SOUTH_EDGE;            
+    NORTH = NORTH_EDGE; 
 
-    SE_field_vect = sqrt(sum((d-result_field).^2)/(N_POINTS))
-    SE_field_comp = sqrt(sum((d-result_field).^2)/(N_POINTS*3))
-
-
-        %%make a picture
-    WEST = floor(min(lon_c))%+EDGE;              
-    EAST = ceil(max(lon_c))%-EDGE;              
-    SOUTH = floor(min(lat_c))%+EDGE;            
-    NORTH = ceil(max(lat_c))%-EDGE;  
-
-    SUSMIN = -0.04;%min(min(x_0), min(chi));
-    SUSMAX = 0.04;%max(max(x_0), max(chi));
-    STEP = 0.01%round(((SUSMAX - SUSMIN)/10)*1000)/1000;
-
-
-    fid_edgexy=fopen(strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME, '_edges.xy'), 'w');
-
-    latxy = SOUTH+EDGE_EXTENSION_S;
-    for lonxy = WEST+EDGE_EXTENSION_W : 1 : EAST-EDGE_EXTENSION_E
-        fprintf(fid_edgexy, '%f %f\n', lonxy, latxy);
-    end
-
-
-    for latxy = SOUTH+EDGE_EXTENSION_S : 1 : NORTH-EDGE_EXTENSION_N
-        fprintf(fid_edgexy, '%f %f\n', lonxy, latxy);
-    end
-
-
-    for lonxy = EAST-EDGE_EXTENSION_E : -1 : WEST+EDGE_EXTENSION_W
-        fprintf(fid_edgexy, '%f %f\n', lonxy, latxy);
-    end
-
-    for latxy = NORTH-EDGE_EXTENSION_N : -1 : SOUTH+EDGE_EXTENSION_S
-        fprintf(fid_edgexy, '%f %f\n', lonxy, latxy);
-    end
-
-    fclose(fid_edgexy);
-
-    %%DEPTH PICTURE
-    PATH_SURF = 'C:\Users\eldarba\Documents\MATLAB\pub3_upper_layer\data\';
-    TOP_FILENAME = 'march_TOP.xyz';
-    BOT_FILENAME = 'march_BOT.xyz';
+    SUSMIN = min(min(x_0), min(chi));
+    SUSMAX = max(max(x_0), max(chi));
+    STEP = round(((SUSMAX - SUSMIN)/10)*1000)/1000;
 
 
 
     fid_bat=fopen(strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, 'exec.bat'), 'w');
-
-    fprintf(fid_bat, 'set topsurf=%s\n', strcat(PATH_SURF, TOP_FILENAME));
-    fprintf(fid_bat, 'set botsurf=%s\n', strcat(PATH_SURF, BOT_FILENAME));
-    fprintf(fid_bat, 'surface  %%topsurf%% -Rd%d/%d/%d/%d -I1d -G%%topsurf%%.grd\n', WEST, EAST, SOUTH, NORTH);
-    fprintf(fid_bat, 'surface  %%botsurf%% -Rd%d/%d/%d/%d -I1d -G%%botsurf%%.grd\n', WEST, EAST, SOUTH, NORTH);
-    fprintf(fid_bat, 'grdmath  %%topsurf%%.grd 1000 DIV  = %%topsurf%%.grd\n');
-    fprintf(fid_bat, 'grdmath  %%botsurf%%.grd 1000 DIV = %%botsurf%%.grd\n');
-
-
 
     for lay = 1 : N_LAYERS
         fprintf(fid_bat, 'set grid1=%s\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME, '_layer', num2str(lay),'_suscept_rslt'));
@@ -1818,9 +1535,6 @@ if STEP5
         fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Cpanoply -E19 -T= -L%f/%f>  %%grid1%%.cpt\n', SUSMIN, SUSMAX);
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'grdcontour %%topsurf%%.grd -Rd%d/%d/%d/%d -JU33N/6i -L%d/%d -C%d -A%d -Wcthin,white, -Wathin,white, -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH, HOB(lay)/1000+0.2, HOT(lay)/1000-0.2, 2, 2);
-        fprintf(fid_bat, 'grdcontour %%botsurf%%.grd -Rd%d/%d/%d/%d -JU33N/6i -L%d/%d -C%d -A%d -Wcthin,black, -Wathin,black, -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH, HOB(lay)/1000+0.2, HOT(lay)/1000-0.2, 2, 2);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"Susceptibility":/:SI: -O >> %%grid1%%.ps\n', STEP);
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
 
@@ -1831,8 +1545,6 @@ if STEP5
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'grdcontour %%topsurf%%.grd -Rd%d/%d/%d/%d -JU33N/6i -L%d/%d -C%d -A%d -Wcthin,white, -Wathin,white, -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH, HOB(lay)/1000+0.2, HOT(lay)/1000-0.2, 2, 2);
-        fprintf(fid_bat, 'grdcontour %%botsurf%%.grd -Rd%d/%d/%d/%d -JU33N/6i -L%d/%d -C%d -A%d -Wcthin,black, -Wathin,black, -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH, HOB(lay)/1000+0.2, HOT(lay)/1000-0.2, 2, 2);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"Susceptibility":/:SI: -O >> %%grid1%%.ps\n', STEP);
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
     end
@@ -1849,36 +1561,15 @@ if STEP5
         fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Chaxby -E30 -L%f/%f >  %%grid1%%.cpt\n', FIELDMIN, FIELDMAX);
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"forward after inv. %s":/:"pT/km": -O >> %%grid1%%.ps\n', FIELDSTEP, char(COMP_let(cl)));
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
-
 
         fprintf(fid_bat, 'set grid1=%s\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME, strcat('_observed_', char(COMP_let(cl))) ) );
         fprintf(fid_bat, 'surface  %%grid1%%.xyz -Rd%d/%d/%d/%d -I0.25d -G%%grid1%%.grd\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Chaxby -E30 -L%f/%f  >  %%grid1%%.cpt\n', FIELDMIN, FIELDMAX);
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"original observed %s":/:"pT/km": -O >> %%grid1%%.ps\n', FIELDSTEP, char(COMP_let(cl)));
-        fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
-
-        fprintf(fid_bat, 'set grid1=%s\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME, strcat('_test_', char(COMP_let(cl))) ) );
-        fprintf(fid_bat, 'surface  %%grid1%%.xyz -Rd%d/%d/%d/%d -I0.25d -G%%grid1%%.grd\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Chaxby -E30 >  %%grid1%%.cpt\n');%, FIELDMIN, FIELDMAX);
-        fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"surrounding %s":/:"pT/km": -O >> %%grid1%%.ps\n', 1, char(COMP_let(cl)));
-        fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
-
-        fprintf(fid_bat, 'set grid1=%s\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME, strcat('_actual_', char(COMP_let(cl))) ) );
-        fprintf(fid_bat, 'surface  %%grid1%%.xyz -Rd%d/%d/%d/%d -I0.25d -G%%grid1%%.grd\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Chaxby -E30 -L%f/%f  >  %%grid1%%.cpt\n', FIELDMIN, FIELDMAX);
-        fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"orig. observed - surr. %s":/:"pT/km": -O >> %%grid1%%.ps\n', FIELDSTEP, char(COMP_let(cl)));
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
 
         fprintf(fid_bat, 'set grid1=%s\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME, strcat('_difference_', char(COMP_let(cl))) ) );
@@ -1886,7 +1577,6 @@ if STEP5
         fprintf(fid_bat, 'grd2cpt %%grid1%%.grd -Chaxby -E30  >  %%grid1%%.cpt\n');
         fprintf(fid_bat, 'grdimage %%grid1%%.grd -Rd%d/%d/%d/%d  -JU33N/6i -C%%grid1%%.cpt -P -K > %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'pscoast -Dl -Rd%d/%d/%d/%d  -JU33N/6i -Ba5g5f1/a5g5f1WESN   -V -W1/0.5thin   -O -K >> %%grid1%%.ps\n', WEST, EAST, SOUTH, NORTH);
-        fprintf(fid_bat, 'psxy %s_edges.xy -Rd%d/%d/%d/%d -JU33N/6i -O -K -Wthickest,white,- >> %%grid1%%.ps\n', strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, LOCAL_OBSERVED_NAME), WEST, EAST, SOUTH, NORTH);
         fprintf(fid_bat, 'psscale -D5.3i/5i/5c/0.7c -C%%grid1%%.cpt -I -B%f:"(or. obs- - surr.)-(forward after inv.)%s":/:"pT/km": -O >> %%grid1%%.ps\n', round(min(sigma_grad_d)*100)/100, char(COMP_let(cl)));
         fprintf(fid_bat, 'ps2raster -A+r %%grid1%%.ps\n\n');
 
@@ -1902,9 +1592,7 @@ if STEP5
     delete(strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, '*.d'))
     %%%%%%%%%%%%%%%%%%%%
 
-    curr_date = datestr(clock, 'ddmmyy_hhMMSS');
-
-    FILNAME_MASK = strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, curr_date);
+    FILNAME_MASK = strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, CURRENT_DATE);
 
     X0_FILENAME = strcat(FILNAME_MASK,'_x_0.bin');
     fileID = fopen(X0_FILENAME,'w');
@@ -1932,23 +1620,10 @@ if STEP5
 
     fprintf('Calculating...\n')
 
-    result_fid = fopen(strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, 'RESULT_model.magtess'), 'w');
-
-    j = 1;
+    result_fid = fopen(strcat(PATH_OUTPUT, RESULT_FOLDER_GRAD, '_RESULT_model.magtess'), 'w');
 
     for i = 1 : N_FILES
         current = FILENAMES(i).name;
-
-        borders = sscanf(current, strcat('allblock_G', num2str(TESSEROID_WIDTH), '_W%dE%dS%dN%d'));
-        WEST = borders(1)+EDGE_EXTENSION_W;              
-        EAST = borders(2)-EDGE_EXTENSION_E;              
-        SOUTH = borders(3)+EDGE_EXTENSION_S;            
-        NORTH = borders(4)-EDGE_EXTENSION_N;  
-
-        layer_depth = regExtractNums(current); %can be corrected
-        HOT = -layer_depth(7);
-        HOB = -layer_depth(6);
-
 
         fid = fopen(strcat(PATH_OUTPUT, current), 'r');
 
@@ -1973,5 +1648,6 @@ if STEP5
     fclose(result_fid);
     
     
-    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d
+    clearvars -except EARTH_RADIUS_IGRF_KM EARTH_RADIUS_TESS_M  STEP1 STEP2 STEP3 STEP4 STEP5 IGRF_DATE PATH_SURF TOP_FILENAME BOT_FILENAME PATH_OUTPUT TESSEROID_WIDTH LAYER_HEIGHT WEST_EDGE EAST_EDGE SOUTH_EDGE NORTH_EDGE EDGE_EXTENSION_W EDGE_EXTENSION_E EDGE_EXTENSION_S EDGE_EXTENSION_N ALTITUDE SPACING OBSERVED_DATA_FILENAME_BX OBSERVED_DATA_FILENAME_BY OBSERVED_DATA_FILENAME_BZ RESULT_FOLDER_VECT RESULT_FOLDER_GRAD STANDART_SUSCEPTIBILITY APRIORI_SUSCEPT_FILENAME_TEMPLATE sigma_x sigma_vect_d sigma_grad_d BLOCK_FILENAME_TEMPLATE CURRENT_DATE
+    fprintf('STEP 5 finished\n');
 end

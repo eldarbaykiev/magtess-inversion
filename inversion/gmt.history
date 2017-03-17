@@ -1,0 +1,8 @@
+# GMT 5 Session common arguments shelf
+BEGIN GMT 5.1.2
+B	5.000000:(or. obs- - surr.)-(forward after inv.)Bzy:/:pT/km:
+J	U
+JU	U33N/6i
+R	d-180/180/-90/-55
+L	3
+END
